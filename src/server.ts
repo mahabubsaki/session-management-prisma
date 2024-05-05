@@ -19,6 +19,7 @@ async function startServer() {
 
         });
     } catch (err) {
+        await prisma.$disconnect();
         console.log(err);
     }
 

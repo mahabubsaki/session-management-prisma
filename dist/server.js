@@ -22,6 +22,7 @@ async function startServer() {
         });
     }
     catch (err) {
+        await db_config_1.default.$disconnect();
         console.log(err);
     }
     process.on('unhandledRejection', (err) => {
