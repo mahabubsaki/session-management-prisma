@@ -13,11 +13,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String?
-  provider  String?
-  createdAt DateTime @default(now())
+model Divisons {
+  id           Int    @id @default(autoincrement())
+  unique_name  String @unique
+  name         String
+  nameBn       String
+  latitude     Float
+  longitude    Float
+  population   Int
+  area         Float
+  density      Float
+  literacyRate Float
+  website      String
 }
