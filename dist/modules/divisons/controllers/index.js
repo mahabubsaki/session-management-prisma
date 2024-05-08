@@ -28,9 +28,10 @@ const postDivisonsController = (0, catchAsync_1.default)(async (req, res, _) => 
         website
     });
     res.status(201).json({
-        status: 'success',
+        success: true,
         message: 'Divisons Controller',
-        data: result
+        data: result,
+        statusCode: 201
     });
 });
 exports.default = { allDivisonsController, postDivisonsController };
