@@ -2,6 +2,7 @@ import { Server } from 'http';
 import prisma from './configs/db/db.config';
 import app from './app';
 import envs from './configs/env/env.config';
+import redisClient from './configs/redis/redis.config';
 let server: Server;
 
 process.on('uncaughtException', (err) => {
@@ -14,6 +15,7 @@ async function startServer() {
 
     try {
         await prisma.$connect();
+        await redisClient.connect();
         server = app.listen(envs.port, () => {
             console.log(`Server is running on port ${envs.port}`);
 

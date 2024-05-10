@@ -8,7 +8,8 @@ const services_1 = __importDefault(require("../services"));
 const allDivisonsController = (0, catchAsync_1.default)(async (_, res, __) => {
     const result = await services_1.default.getAllDivisons();
     res.status(200).json({
-        status: 'success',
+        statusCode: 200,
+        success: true,
         message: 'Divisons Controller',
         data: result
     });

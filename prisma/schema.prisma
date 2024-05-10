@@ -26,3 +26,20 @@ model Divisons {
   literacyRate Float
   website      String
 }
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  name     String
+}
+
+// model RefreshToken {
+//   id           Int      @id @default(autoincrement())
+//   token        String
+//   userId       Int
+//   expiresAt    DateTime
+//   createdAt    DateTime @default(now())
+//   updatedAt    DateTime @updatedAt
+//   User         User     @relation(fields: [userId], references: [id])
+// }

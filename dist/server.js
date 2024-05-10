@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const db_config_1 = __importDefault(require("./configs/db/db.config"));
 const app_1 = __importDefault(require("./app"));
 const env_config_1 = __importDefault(require("./configs/env/env.config"));
+const redis_config_1 = __importDefault(require("./configs/redis/redis.config"));
 let server;
 process.on('uncaughtException', (err) => {
     console.log(err);
@@ -17,6 +18,7 @@ process.on('uncaughtException', (err) => {
 async function startServer() {
     try {
         await db_config_1.default.$connect();
+        await redis_config_1.default.connect();
         server = app_1.default.listen(env_config_1.default.port, () => {
             console.log(`Server is running on port ${env_config_1.default.port}`);
         });
