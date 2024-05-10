@@ -8,4 +8,6 @@ export default {
   dbUri: process.env.DATABASE_URL!,
   sessionSecret: process.env.SESSION_SECRET!,
   cookieExpiration: +(process.env.COOKIE_EXPIRATION!),
+  jwtSecret: process.env.JWT_SECRET!,
+  cookieSecret: process.env.COOKIE_SECRET!,
 };

@@ -12,8 +12,7 @@ const express_session_1 = __importDefault(require("express-session"));
 const env_config_1 = __importDefault(require("./configs/env/env.config"));
 const redis_store_1 = __importDefault(require("./configs/redis/redis.store"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const redis_config_1 = __importDefault(require("./configs/redis/redis.config"));
-const util_1 = __importDefault(require("util"));
+const decodeSessionId_1 = __importDefault(require("./middlewares/decodeSessionId"));
 const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
@@ -35,7 +34,7 @@ app.use((0, express_session_1.default)({
         priority: 'high',
     }
 }));
-app.get('/', (req, res) => {
+app.get('/set', (req, res) => {
     //@ts-ignore
     req.session.token = '123456';
     res.json({
@@ -45,16 +44,16 @@ app.get('/', (req, res) => {
         data: []
     });
 });
-app.get('/test', async (req, res) => {
-    console.log(req.cookies.session_id);
-    const promisRedis = util_1.default.promisify(redis_config_1.default.get);
-    try {
-        const data = await promisRedis(req.cookies.session_id);
-        console.log(data);
-    }
-    catch (e) {
-        console.log(e);
-    }
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Welcome to the API',
+        statusCode: 200,
+        data: []
+    });
+});
+app.get('/test', decodeSessionId_1.default, async (req, res) => {
+    console.log(req.cookies.token);
     res.json({
         success: true,
         message: 'Welcome to the API',

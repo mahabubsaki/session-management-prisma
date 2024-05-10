@@ -20,11 +20,14 @@ import decodeSessionId from './middlewares/decodeSessionId';
 
 const app = express();
 
-app.use(cookieParser());
+app.use(cookieParser(envConfig.cookieSecret));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:5173'],
+    credentials: true
+}));
 app.use(session({
     secret: envConfig.sessionSecret,
     resave: false,
@@ -36,26 +39,16 @@ app.use(session({
         httpOnly: true, // safe from XSS attacks
         maxAge: 1000 * 60 * 60 * envConfig.cookieExpiration,
         path: '/', // cookie will be sent to all routes,
-        sameSite: envConfig.env === 'production' ? 'none' : 'lax',
+        sameSite: 'strict',
         secure: envConfig.env === 'production' ? true : false,
         priority: 'high',
+        signed: true,
     }
 }));
 
-app.get('/set', (req: Request, res: CustomResponse<AppResponse>) => {
-    //@ts-ignore
-    req.session.token = '123456';
-
-    res.json({
-        success: true,
-        message: 'Welcome to the API',
-        statusCode: 200,
-        data: []
-    });
-});
 
 
-app.get('/', (req: Request, res: CustomResponse<AppResponse>) => {
+app.get('/', (_: Request, res: CustomResponse<AppResponse>) => {
 
 
     res.json({
@@ -66,15 +59,7 @@ app.get('/', (req: Request, res: CustomResponse<AppResponse>) => {
     });
 });
 
-app.get('/test', decodeSessionId, async (req: Request, res: CustomResponse<AppResponse>) => {
-    console.log(req.cookies.token);
-    res.json({
-        success: true,
-        message: 'Welcome to the API',
-        statusCode: 200,
-        data: []
-    });
-});
+
 app.use('/api/v1', router);
 
 app.use(globalErrorHandler);
