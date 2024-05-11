@@ -12,12 +12,14 @@ const express_session_1 = __importDefault(require("express-session"));
 const env_config_1 = __importDefault(require("./configs/env/env.config"));
 const redis_store_1 = __importDefault(require("./configs/redis/redis.store"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const decodeSessionId_1 = __importDefault(require("./middlewares/decodeSessionId"));
 const app = (0, express_1.default)();
-app.use((0, cookie_parser_1.default)());
+app.use((0, cookie_parser_1.default)(env_config_1.default.cookieSecret));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: ['http://localhost:5173'],
+    credentials: true
+}));
 app.use((0, express_session_1.default)({
     secret: env_config_1.default.sessionSecret,
     resave: false,
@@ -29,31 +31,13 @@ app.use((0, express_session_1.default)({
         httpOnly: true, // safe from XSS attacks
         maxAge: 1000 * 60 * 60 * env_config_1.default.cookieExpiration,
         path: '/', // cookie will be sent to all routes,
-        sameSite: env_config_1.default.env === 'production' ? 'none' : 'lax',
+        sameSite: 'strict',
         secure: env_config_1.default.env === 'production' ? true : false,
         priority: 'high',
+        signed: true,
     }
 }));
-app.get('/set', (req, res) => {
-    //@ts-ignore
-    req.session.token = '123456';
-    res.json({
-        success: true,
-        message: 'Welcome to the API',
-        statusCode: 200,
-        data: []
-    });
-});
-app.get('/', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Welcome to the API',
-        statusCode: 200,
-        data: []
-    });
-});
-app.get('/test', decodeSessionId_1.default, async (req, res) => {
-    console.log(req.cookies.token);
+app.get('/', (_, res) => {
     res.json({
         success: true,
         message: 'Welcome to the API',

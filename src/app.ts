@@ -9,9 +9,7 @@ import session from "express-session";
 import envConfig from './configs/env/env.config';
 import redisStore from './configs/redis/redis.store';
 import cookieParser from 'cookie-parser';
-import redisClient from './configs/redis/redis.config';
-import util from 'util';
-import decodeSessionId from './middlewares/decodeSessionId';
+import cookieConfig from './configs/env/cookie.config';
 
 
 
@@ -34,16 +32,7 @@ app.use(session({
     store: redisStore,
     name: 'session_id',
     saveUninitialized: false,
-    cookie: {
-        domain: envConfig.env === 'production' ? '.vercel.com' : '.localhost',
-        httpOnly: true, // safe from XSS attacks
-        maxAge: 1000 * 60 * 60 * envConfig.cookieExpiration,
-        path: '/', // cookie will be sent to all routes,
-        sameSite: 'strict',
-        secure: envConfig.env === 'production' ? true : false,
-        priority: 'high',
-        signed: true,
-    }
+    cookie: cookieConfig
 }));
 
 

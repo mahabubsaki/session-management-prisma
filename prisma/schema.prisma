@@ -50,7 +50,7 @@ model RefreshToken {
 model Sessions {
   id        Int    @id @default(autoincrement())
   userId    Int
-  sessionId String
+  sessionId String @unique
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }

@@ -109,19 +109,30 @@ const loginController = catchAsync(async (req, res, next) => {
     }
 
     const accessToken = jwt.sign({ email }, envConfig.jwtSecret, {
-        expiresIn: envConfig.cookieExpiration * 1000 * 60 * 60, // 4 hours
+        expiresIn: envConfig.cookieExpiration, // 4 Seconds
 
     });
     const refreshToken = jwt.sign({ email }, envConfig.jwtSecret, {
         expiresIn: envConfig.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2, // 2 months
     });
-
-    const session = await prisma.sessions.create({
+    console.log(req.sessionID, 'Session ID');
+    await prisma.sessions.create({
         data: {
             sessionId: req.sessionID,
             userId: user.id,
         }
     });
+
+    await prisma.user.update({
+        where: {
+            id: user.id
+        },
+        data: {
+            token: refreshToken
+        }
+
+    });
+
 
     await prisma.refreshToken.upsert({
         where: {
@@ -139,9 +150,7 @@ const loginController = catchAsync(async (req, res, next) => {
     });
 
     // @ts-ignore
-    req.session.user = user;
-    // @ts-ignore
-    req.session.storedSession = session.id;
+    req.session.loggedIn = true;
 
     res.cookie('access_token', accessToken, cookieConfig);
 
@@ -159,17 +168,8 @@ const loginController = catchAsync(async (req, res, next) => {
 
 const profileController = catchAsync(async (req, res, next) => {
     // @ts-ignore
-    const { user } = req.session;
-    if (!user) {
-        return res.status(401).json({
-            statusCode: 401,
-            message: 'Unauthorized',
-            success: false,
-            error: 'User not found'
-        });
-    }
     res.json({
-        data: user,
+        data: req.user,
         statusCode: 200,
         message: 'Profile fetched successfully',
         success: true,
@@ -183,8 +183,7 @@ const logoutController = catchAsync(async (req, res, next) => {
         await prisma.sessions.delete({
             where: {
                 sessionId: req.sessionID,
-                // @ts-ignore
-                id: req.session.storedSession
+
             }
         });
     console.log(sessionId, 'Deleted session');
