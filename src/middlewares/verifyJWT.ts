@@ -61,7 +61,7 @@ const verifyJWT = catchAsync(async (req, res, next) => {
                         );
 
                         const newAccessToken = jwt.sign({ email: session.user.email }, envConfig.jwtSecret, {
-                            expiresIn: envConfig.cookieExpiration, // 4 hours
+                            expiresIn: envConfig.cookieExpiration * 60 * 60, // 4 hours
                         });
                         res.cookie('access_token', newAccessToken, cookieConfig);
                         console.log('New access token generated');

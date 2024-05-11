@@ -15,11 +15,11 @@ const signUpController = catchAsync(async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const accessToken = jwt.sign({ email }, envConfig.jwtSecret, {
-        expiresIn: envConfig.cookieExpiration * 1000 * 60 * 60, // 4 hours
+        expiresIn: envConfig.cookieExpiration * 60 * 60, // 4 hours
 
     });
     const refreshToken = jwt.sign({ email }, envConfig.jwtSecret, {
-        expiresIn: envConfig.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2, // 2 months
+        expiresIn: envConfig.cookieExpiration * 60 * 60 * 6 * 30 * 2, // 2 months
     });
 
 
@@ -37,7 +37,7 @@ const signUpController = catchAsync(async (req, res, next) => {
                 name: true,
             }
         });
-        const session = await prisma.sessions.create({
+        await prisma.sessions.create({
             data: {
                 sessionId: req.sessionID,
                 userId: data.id,
@@ -53,9 +53,7 @@ const signUpController = catchAsync(async (req, res, next) => {
         });
 
         // @ts-ignore
-        req.session.user = data;
-        // @ts-ignore
-        req.session.storedSession = session.id;
+        req.session.loggedIn = true;
     } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError) {
 
@@ -109,11 +107,11 @@ const loginController = catchAsync(async (req, res, next) => {
     }
 
     const accessToken = jwt.sign({ email }, envConfig.jwtSecret, {
-        expiresIn: envConfig.cookieExpiration, // 4 Seconds
+        expiresIn: envConfig.cookieExpiration * 60 * 60, // 4 Seconds
 
     });
     const refreshToken = jwt.sign({ email }, envConfig.jwtSecret, {
-        expiresIn: envConfig.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2, // 2 months
+        expiresIn: envConfig.cookieExpiration * 60 * 60 * 6 * 30 * 2, // 2 months
     });
     console.log(req.sessionID, 'Session ID');
     await prisma.sessions.create({
@@ -168,6 +166,7 @@ const loginController = catchAsync(async (req, res, next) => {
 
 const profileController = catchAsync(async (req, res, next) => {
     // @ts-ignore
+    console.log(req.sessionID, 'Session ID');
     res.json({
         data: req.user,
         statusCode: 200,
