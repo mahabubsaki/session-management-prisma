@@ -37,12 +37,14 @@ const signUpController = catchAsync(async (req, res, next) => {
                 name: true,
             }
         });
-        await prisma.sessions.create({
+        await Promise.all([await prisma.sessions.create({
             data: {
                 sessionId: req.sessionID,
                 userId: data.id,
+                browser: req.headers['user-agent']!,
+                browserHash: req.fingerprint?.hash || Math.random().toString(36).substring(7)
             }
-        });
+        }),
         await prisma.refreshToken.create({
             data: {
                 expiresAt: new Date(Date.now() + envConfig.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
@@ -50,7 +52,7 @@ const signUpController = catchAsync(async (req, res, next) => {
                 userId: data.id
 
             }
-        });
+        })]);
 
         // @ts-ignore
         req.session.loggedIn = true;
@@ -73,6 +75,7 @@ const signUpController = catchAsync(async (req, res, next) => {
         statusCode: 201,
         message: 'Signed up successfully',
         success: true,
+        sessionID: req.sessionID
     });
 });
 
@@ -114,12 +117,14 @@ const loginController = catchAsync(async (req, res, next) => {
         expiresIn: envConfig.cookieExpiration * 60 * 60 * 6 * 30 * 2, // 2 months
     });
     console.log(req.sessionID, 'Session ID');
-    await prisma.sessions.create({
+    await Promise.all([await prisma.sessions.create({
         data: {
             sessionId: req.sessionID,
             userId: user.id,
+            browser: req.headers['user-agent']!,
+            browserHash: req.fingerprint?.hash || Math.random().toString(36).substring(7)
         }
-    });
+    }),
 
     await prisma.user.update({
         where: {
@@ -129,7 +134,7 @@ const loginController = catchAsync(async (req, res, next) => {
             token: refreshToken
         }
 
-    });
+    }),
 
 
     await prisma.refreshToken.upsert({
@@ -145,7 +150,7 @@ const loginController = catchAsync(async (req, res, next) => {
             expiresAt: new Date(Date.now() + envConfig.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
             token: refreshToken,
         }
-    });
+    })]);
 
     // @ts-ignore
     req.session.loggedIn = true;
@@ -159,6 +164,7 @@ const loginController = catchAsync(async (req, res, next) => {
         statusCode: 200,
         message: 'Logged in successfully',
         success: true,
+        sessionID: req.sessionID
     });
 });
 
@@ -166,7 +172,7 @@ const loginController = catchAsync(async (req, res, next) => {
 
 const profileController = catchAsync(async (req, res, next) => {
     // @ts-ignore
-    console.log(req.sessionID, 'Session ID');
+    console.log(req.sessionID, 'Session ID', req.fingerprint?.hash, 'Fingerprint hash');
     res.json({
         data: req.user,
         statusCode: 200,
@@ -198,7 +204,8 @@ const logoutController = catchAsync(async (req, res, next) => {
         statusCode: 200,
         message: 'Logged out successfully',
         success: true,
-        data: []
+        data: [],
+        sessionID: req.sessionID
     });
 });
 

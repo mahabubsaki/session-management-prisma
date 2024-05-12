@@ -11,12 +11,30 @@ import redisStore from './configs/redis/redis.store';
 import cookieParser from 'cookie-parser';
 import cookieConfig from './configs/env/cookie.config';
 
+import Fingerprint from 'express-fingerprint';
+
+
+
+
 
 
 
 
 
 const app = express();
+app.set('trust proxy', true);
+app.use(Fingerprint({
+    parameters: [
+        //@ts-ignore
+        Fingerprint.useragent,
+        //@ts-ignore
+        Fingerprint.acceptHeaders,
+        //@ts-ignore
+        Fingerprint.geoip,
+
+
+    ]
+}));
 
 app.use(cookieParser(envConfig.cookieSecret));
 
@@ -37,8 +55,9 @@ app.use(session({
 
 
 
-app.get('/', (_: Request, res: CustomResponse<AppResponse>) => {
+app.get('/', (req: Request, res: CustomResponse<AppResponse>) => {
 
+    console.log(req.fingerprint);
 
     res.json({
         success: true,

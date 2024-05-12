@@ -7,7 +7,7 @@ const env_config_1 = __importDefault(require("./env.config"));
 const cookieConfig = {
     domain: env_config_1.default.env === 'production' ? '.vercel.com' : '.localhost',
     httpOnly: true,
-    maxAge: 1000 * 60 * 60 * env_config_1.default.cookieExpiration,
+    maxAge: 1000 * 60 * 60 * env_config_1.default.cookieExpiration * 6 * 30 * 2,
     path: '/',
     sameSite: 'strict',
     secure: env_config_1.default.env === 'production' ? true : false,

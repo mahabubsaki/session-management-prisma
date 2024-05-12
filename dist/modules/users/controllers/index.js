@@ -15,10 +15,10 @@ const signUpController = (0, catchAsync_1.default)(async (req, res, next) => {
     const { name, email, password } = req.body;
     const hashedPassword = await bcrypt_1.default.hash(password, 10);
     const accessToken = jsonwebtoken_1.default.sign({ email }, env_config_1.default.jwtSecret, {
-        expiresIn: env_config_1.default.cookieExpiration * 1000 * 60 * 60, // 4 hours
+        expiresIn: env_config_1.default.cookieExpiration * 60 * 60, // 4 hours
     });
     const refreshToken = jsonwebtoken_1.default.sign({ email }, env_config_1.default.jwtSecret, {
-        expiresIn: env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2, // 2 months
+        expiresIn: env_config_1.default.cookieExpiration * 60 * 60 * 6 * 30 * 2, // 2 months
     });
     try {
         const data = await db_config_1.default.user.create({
@@ -34,23 +34,22 @@ const signUpController = (0, catchAsync_1.default)(async (req, res, next) => {
                 name: true,
             }
         });
-        const session = await db_config_1.default.sessions.create({
-            data: {
-                sessionId: req.sessionID,
-                userId: data.id,
-            }
-        });
-        await db_config_1.default.refreshToken.create({
-            data: {
-                expiresAt: new Date(Date.now() + env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
-                token: refreshToken,
-                userId: data.id
-            }
-        });
+        await Promise.all([await db_config_1.default.sessions.create({
+                data: {
+                    sessionId: req.sessionID,
+                    userId: data.id,
+                    browser: req.headers['user-agent'],
+                }
+            }),
+            await db_config_1.default.refreshToken.create({
+                data: {
+                    expiresAt: new Date(Date.now() + env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
+                    token: refreshToken,
+                    userId: data.id
+                }
+            })]);
         // @ts-ignore
-        req.session.user = data;
-        // @ts-ignore
-        req.session.storedSession = session.id;
+        req.session.loggedIn = true;
     }
     catch (err) {
         if (err instanceof client_1.Prisma.PrismaClientKnownRequestError) {
@@ -92,35 +91,43 @@ const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
         });
     }
     const accessToken = jsonwebtoken_1.default.sign({ email }, env_config_1.default.jwtSecret, {
-        expiresIn: env_config_1.default.cookieExpiration * 1000 * 60 * 60, // 4 hours
+        expiresIn: env_config_1.default.cookieExpiration * 60 * 60, // 4 Seconds
     });
     const refreshToken = jsonwebtoken_1.default.sign({ email }, env_config_1.default.jwtSecret, {
-        expiresIn: env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2, // 2 months
+        expiresIn: env_config_1.default.cookieExpiration * 60 * 60 * 6 * 30 * 2, // 2 months
     });
-    const session = await db_config_1.default.sessions.create({
-        data: {
-            sessionId: req.sessionID,
-            userId: user.id,
-        }
-    });
-    await db_config_1.default.refreshToken.upsert({
-        where: {
-            userId: user.id
-        },
-        create: {
-            expiresAt: new Date(Date.now() + env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
-            token: refreshToken,
-            userId: user.id
-        },
-        update: {
-            expiresAt: new Date(Date.now() + env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
-            token: refreshToken,
-        }
-    });
+    console.log(req.sessionID, 'Session ID');
+    await Promise.all([await db_config_1.default.sessions.create({
+            data: {
+                sessionId: req.sessionID,
+                userId: user.id,
+                browser: req.headers['user-agent'],
+            }
+        }),
+        await db_config_1.default.user.update({
+            where: {
+                id: user.id
+            },
+            data: {
+                token: refreshToken
+            }
+        }),
+        await db_config_1.default.refreshToken.upsert({
+            where: {
+                userId: user.id
+            },
+            create: {
+                expiresAt: new Date(Date.now() + env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
+                token: refreshToken,
+                userId: user.id
+            },
+            update: {
+                expiresAt: new Date(Date.now() + env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2),
+                token: refreshToken,
+            }
+        })]);
     // @ts-ignore
-    req.session.user = user;
-    // @ts-ignore
-    req.session.storedSession = session.id;
+    req.session.loggedIn = true;
     res.cookie('access_token', accessToken, cookie_config_1.default);
     res.cookie('refresh_token', refreshToken, cookie_config_1.default);
     res.status(200).json({
@@ -132,17 +139,9 @@ const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
 });
 const profileController = (0, catchAsync_1.default)(async (req, res, next) => {
     // @ts-ignore
-    const { user } = req.session;
-    if (!user) {
-        return res.status(401).json({
-            statusCode: 401,
-            message: 'Unauthorized',
-            success: false,
-            error: 'User not found'
-        });
-    }
+    console.log(req.sessionID, 'Session ID');
     res.json({
-        data: user,
+        data: req.user,
         statusCode: 200,
         message: 'Profile fetched successfully',
         success: true,
@@ -153,8 +152,6 @@ const logoutController = (0, catchAsync_1.default)(async (req, res, next) => {
     const sessionId = await db_config_1.default.sessions.delete({
         where: {
             sessionId: req.sessionID,
-            // @ts-ignore
-            id: req.session.storedSession
         }
     });
     console.log(sessionId, 'Deleted session');
