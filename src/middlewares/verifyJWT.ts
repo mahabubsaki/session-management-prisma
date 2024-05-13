@@ -67,7 +67,7 @@ const verifyAccessToken = async (token: string, storedSession: string, refreshTo
 
 
 const verifyJWT = catchAsync(async (req, res, next) => {
-    console.log(req.headers['user-agent']);
+
     const token = req.signedCookies.access_token;
 
     const refreshToken = req.signedCookies.refresh_token;

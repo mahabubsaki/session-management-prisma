@@ -5,7 +5,6 @@ import catchAsync from "../../../utils/catchAsync";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prismaErrorHandler from "../../../errors/prisma";
-import util from 'util';
 import cookieConfig from "../../../configs/env/cookie.config";
 
 
@@ -61,7 +60,9 @@ const signUpController = catchAsync(async (req, res, next) => {
 
             prismaErrorHandler(err);
         }
-        throw new Error('An error occurred while signing up');
+        else {
+            throw new Error('An error occurred while signing up');
+        }
 
     }
 
@@ -117,6 +118,7 @@ const loginController = catchAsync(async (req, res, next) => {
         expiresIn: envConfig.cookieExpiration * 60 * 60 * 6 * 30 * 2, // 2 months
     });
     console.log(req.sessionID, 'Session ID');
+    console.log(new Date(Date.now() + envConfig.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2));
     await Promise.all([await prisma.sessions.create({
         data: {
             sessionId: req.sessionID,
