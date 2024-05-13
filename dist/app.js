@@ -13,9 +13,20 @@ const env_config_1 = __importDefault(require("./configs/env/env.config"));
 const redis_store_1 = __importDefault(require("./configs/redis/redis.store"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const cookie_config_1 = __importDefault(require("./configs/env/cookie.config"));
+const express_fingerprint_1 = __importDefault(require("express-fingerprint"));
 const app = (0, express_1.default)();
-app.use((0, cookie_parser_1.default)(env_config_1.default.cookieSecret));
 app.set('trust proxy', true);
+app.use((0, express_fingerprint_1.default)({
+    parameters: [
+        //@ts-ignore
+        express_fingerprint_1.default.useragent,
+        //@ts-ignore
+        express_fingerprint_1.default.acceptHeaders,
+        //@ts-ignore
+        express_fingerprint_1.default.geoip,
+    ]
+}));
+app.use((0, cookie_parser_1.default)(env_config_1.default.cookieSecret));
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cors_1.default)({
@@ -31,6 +42,7 @@ app.use((0, express_session_1.default)({
     cookie: cookie_config_1.default
 }));
 app.get('/', (req, res) => {
+    console.log(req.fingerprint);
     res.json({
         success: true,
         message: 'Welcome to the API',

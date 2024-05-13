@@ -39,6 +39,7 @@ const signUpController = (0, catchAsync_1.default)(async (req, res, next) => {
                     sessionId: req.sessionID,
                     userId: data.id,
                     browser: req.headers['user-agent'],
+                    browserHash: req.fingerprint?.hash || Math.random().toString(36).substring(7)
                 }
             }),
             await db_config_1.default.refreshToken.create({
@@ -64,6 +65,7 @@ const signUpController = (0, catchAsync_1.default)(async (req, res, next) => {
         statusCode: 201,
         message: 'Signed up successfully',
         success: true,
+        sessionID: req.sessionID
     });
 });
 const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
@@ -102,6 +104,7 @@ const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
                 sessionId: req.sessionID,
                 userId: user.id,
                 browser: req.headers['user-agent'],
+                browserHash: req.fingerprint?.hash || Math.random().toString(36).substring(7)
             }
         }),
         await db_config_1.default.user.update({
@@ -135,11 +138,12 @@ const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
         statusCode: 200,
         message: 'Logged in successfully',
         success: true,
+        sessionID: req.sessionID
     });
 });
 const profileController = (0, catchAsync_1.default)(async (req, res, next) => {
     // @ts-ignore
-    console.log(req.sessionID, 'Session ID');
+    console.log(req.sessionID, 'Session ID', req.fingerprint?.hash, 'Fingerprint hash');
     res.json({
         data: req.user,
         statusCode: 200,
@@ -167,7 +171,8 @@ const logoutController = (0, catchAsync_1.default)(async (req, res, next) => {
         statusCode: 200,
         message: 'Logged out successfully',
         success: true,
-        data: []
+        data: [],
+        sessionID: req.sessionID
     });
 });
 exports.default = {
