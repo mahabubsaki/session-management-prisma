@@ -6,6 +6,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prismaErrorHandler from "../../../errors/prisma";
 import cookieConfig from "../../../configs/env/cookie.config";
+import randomString from "../../../utils/randomString";
+import redisClient from "../../../configs/redis/redis.config";
 
 
 const signUpController = catchAsync(async (req, res, next) => {
@@ -81,8 +83,29 @@ const signUpController = catchAsync(async (req, res, next) => {
 });
 
 
+const clearSessionController = catchAsync(async (req, res, next) => {
+    const { email } = req.body;
+
+    const data = await prisma.user.findFirst({
+        where: {
+            email
+        }
+    });
+    if (!data) {
+        res.statusCode = 404;
+        throw new Error('User not found with given email');
+    }
+    await prisma.sessions.deleteMany({
+        where: {
+            userId: data?.id
+        }
+    });
+    next();
+});
+
 const loginController = catchAsync(async (req, res, next) => {
     const { email, password } = req.body;
+
 
     const user = await prisma.user.findUnique({
         where: {
@@ -91,27 +114,19 @@ const loginController = catchAsync(async (req, res, next) => {
     });
 
     if (!user) {
-        return res.status(401).json({
-            statusCode: 401,
-            message: 'Unauthorized',
-            success: false,
-            error: 'User not found'
-        });
+        res.statusCode = 404;
+        throw new Error('User not found with given email');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-        return res.status(401).json({
-            statusCode: 401,
-            message: 'Unauthorized',
-            success: false,
-            error: 'Invalid password'
-        });
+        res.statusCode = 401;
+        throw new Error('Invalid password');
     }
 
     const accessToken = jwt.sign({ email }, envConfig.jwtSecret, {
-        expiresIn: envConfig.cookieExpiration * 60 * 60, // 4 Seconds
+        expiresIn: envConfig.cookieExpiration * 60 * 60, // 4 Hours
 
     });
     const refreshToken = jwt.sign({ email }, envConfig.jwtSecret, {
@@ -119,6 +134,21 @@ const loginController = catchAsync(async (req, res, next) => {
     });
     console.log(req.sessionID, 'Session ID');
     console.log(new Date(Date.now() + envConfig.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2));
+    const totalSessions = await prisma.sessions.findMany({
+        where: {
+            userId: user.id
+        },
+
+    });
+    console.log(totalSessions, 'Total sessions');
+    if (totalSessions.length >= 3) {
+        res.statusCode = 403;
+        const random = randomString();
+        await redisClient.set('temporary_token' + random, random, {
+            EX: envConfig.redisExpiration * 60
+        });
+        throw new Error('Session limit exceeded , Please logout from here or logout from all session, Temporary token:' + random);
+    }
     await Promise.all([await prisma.sessions.create({
         data: {
             sessionId: req.sessionID,
@@ -162,11 +192,10 @@ const loginController = catchAsync(async (req, res, next) => {
     res.cookie('refresh_token', refreshToken, cookieConfig);
 
     res.status(200).json({
-        data: { email, password },
+        data: { email, password, sessionLimitExceeded: totalSessions.length >= 3 },
         statusCode: 200,
         message: 'Logged in successfully',
         success: true,
-        sessionID: req.sessionID
     });
 });
 
@@ -213,5 +242,5 @@ const logoutController = catchAsync(async (req, res, next) => {
 
 
 export default {
-    signUpController, profileController, logoutController, loginController
+    signUpController, profileController, logoutController, loginController, clearSessionController
 };

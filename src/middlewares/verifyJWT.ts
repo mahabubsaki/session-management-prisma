@@ -4,6 +4,7 @@ import cookieConfig from "../configs/env/cookie.config";
 import envConfig from "../configs/env/env.config";
 import catchAsync from "../utils/catchAsync";
 import jwt, { VerifyErrors, } from 'jsonwebtoken';
+import clearAuthCookie from "../utils/clearAuthCookie";
 
 
 const verifyRefreshToken = async (refreshToken: string): Promise<void> => {
@@ -111,10 +112,9 @@ const verifyJWT = catchAsync(async (req, res, next) => {
             }
 
         });
-        res.clearCookie('access_token', { ...cookieConfig, maxAge: 0 });
-        res.clearCookie('refresh_token', { ...cookieConfig, maxAge: 0 });
-        res.clearCookie('session_id', { ...cookieConfig, maxAge: 0 });
-        return next((error as VerifyErrors).message);
+        clearAuthCookie(res);
+        res.statusCode = 401;
+        return next({ message: (error as VerifyErrors).message || 'Something went wrong in cookie' });
     }
 
 

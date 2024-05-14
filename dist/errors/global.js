@@ -1,14 +1,19 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const http_status_1 = __importDefault(require("http-status"));
 const globalErrorHandler = (err, req, res, next) => {
     const responseObj = {
-        statusCode: 500,
-        message: "Something went wrong!",
+        statusCode: res.statusCode || 500,
+        // @ts-ignore
+        message: http_status_1.default[res.statusCode || '500'],
         error: err.message,
         success: false,
     };
-    console.log(err);
-    res.status(500).json(responseObj);
+    console.dir(err);
+    res.status(responseObj.statusCode).json(responseObj);
     next();
 };
 exports.default = globalErrorHandler;

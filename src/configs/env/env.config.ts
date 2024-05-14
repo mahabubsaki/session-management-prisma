@@ -10,5 +10,6 @@ export default {
   cookieExpiration: +(process.env.COOKIE_EXPIRATION!),
   jwtSecret: process.env.JWT_SECRET!,
   cookieSecret: process.env.COOKIE_SECRET!,
-  redisUrl: process.env.REDIS_URL!
+  redisUrl: process.env.REDIS_URL!,
+  redisExpiration: +(process.env.REDIS_EXPIRATION!),
 };

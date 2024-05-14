@@ -1,5 +1,7 @@
 import prisma from "../configs/db/db.config";
 import catchAsync from "../utils/catchAsync";
+import cookieConfig from "../configs/env/cookie.config";
+import clearAuthCookie from "../utils/clearAuthCookie";
 
 const sessionDetector = catchAsync(async (req, res, next) => {
     const sessionId = req.sessionID;
@@ -10,8 +12,15 @@ const sessionDetector = catchAsync(async (req, res, next) => {
             browserHash: fingerprint
         }
     });
-    if (!data || data.browser !== req.headers['user-agent']) {
-        return next('Credentials Exposed to Unauthorized User');
+    if (!data) {
+        res.statusCode = 403;
+        clearAuthCookie(res);
+        return next({ message: 'Unauthorized Access' });
+    }
+    if (data.browser !== req.headers['user-agent']) {
+        res.statusCode = 401;
+        clearAuthCookie(res);
+        return next({ message: 'Credentials Exposed to Unauthorized User' });
     }
     next();
 });

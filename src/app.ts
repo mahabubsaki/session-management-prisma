@@ -70,8 +70,9 @@ app.get('/', (req: Request, res: CustomResponse<AppResponse>) => {
 
 app.use('/api/v1', router);
 
-app.use(globalErrorHandler);
+
 app.use(notFoundErrorHandler);
+app.use(globalErrorHandler);
 
 
 

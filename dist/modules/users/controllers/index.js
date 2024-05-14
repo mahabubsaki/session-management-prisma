@@ -56,7 +56,9 @@ const signUpController = (0, catchAsync_1.default)(async (req, res, next) => {
         if (err instanceof client_1.Prisma.PrismaClientKnownRequestError) {
             (0, prisma_1.default)(err);
         }
-        throw new Error('An error occurred while signing up');
+        else {
+            throw new Error('An error occurred while signing up');
+        }
     }
     res.cookie('access_token', accessToken, cookie_config_1.default);
     res.cookie('refresh_token', refreshToken, cookie_config_1.default);
@@ -76,21 +78,13 @@ const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
         }
     });
     if (!user) {
-        return res.status(401).json({
-            statusCode: 401,
-            message: 'Unauthorized',
-            success: false,
-            error: 'User not found'
-        });
+        res.statusCode = 404;
+        throw new Error('User not found with given email');
     }
     const isPasswordValid = await bcrypt_1.default.compare(password, user.password);
     if (!isPasswordValid) {
-        return res.status(401).json({
-            statusCode: 401,
-            message: 'Unauthorized',
-            success: false,
-            error: 'Invalid password'
-        });
+        res.statusCode = 401;
+        throw new Error('Invalid password');
     }
     const accessToken = jsonwebtoken_1.default.sign({ email }, env_config_1.default.jwtSecret, {
         expiresIn: env_config_1.default.cookieExpiration * 60 * 60, // 4 Seconds
@@ -99,6 +93,17 @@ const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
         expiresIn: env_config_1.default.cookieExpiration * 60 * 60 * 6 * 30 * 2, // 2 months
     });
     console.log(req.sessionID, 'Session ID');
+    console.log(new Date(Date.now() + env_config_1.default.cookieExpiration * 1000 * 60 * 60 * 6 * 30 * 2));
+    const totalSessions = await db_config_1.default.sessions.findMany({
+        where: {
+            userId: user.id
+        },
+    });
+    console.log(totalSessions, 'Total sessions');
+    if (totalSessions.length >= 3) {
+        res.statusCode = 403;
+        throw new Error('Session limit exceeded');
+    }
     await Promise.all([await db_config_1.default.sessions.create({
             data: {
                 sessionId: req.sessionID,
@@ -134,11 +139,10 @@ const loginController = (0, catchAsync_1.default)(async (req, res, next) => {
     res.cookie('access_token', accessToken, cookie_config_1.default);
     res.cookie('refresh_token', refreshToken, cookie_config_1.default);
     res.status(200).json({
-        data: { email, password },
+        data: { email, password, sessionLimitExceeded: totalSessions.length >= 3 },
         statusCode: 200,
         message: 'Logged in successfully',
         success: true,
-        sessionID: req.sessionID
     });
 });
 const profileController = (0, catchAsync_1.default)(async (req, res, next) => {

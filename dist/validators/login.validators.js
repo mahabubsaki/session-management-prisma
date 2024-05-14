@@ -3,17 +3,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.signupSchema = void 0;
-const zod_1 = __importDefault(require("zod"));
+exports.loginSchema = void 0;
+const zod_1 = require("zod");
 const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
-exports.signupSchema = zod_1.default.object({
-    email: zod_1.default.string().email(),
-    password: zod_1.default.string().min(6).regex(/[a-zA-Z0-9]/, { message: 'Password must contain at least one letter and one number' }),
-    name: zod_1.default.string().min(2).max(20),
+exports.loginSchema = zod_1.z.object({
+    email: zod_1.z.string().email(),
+    password: zod_1.z.string().min(6).regex(/[a-zA-Z0-9]/, { message: 'Password must contain at least one letter and one number' }),
 });
-const signupValidator = (0, catchAsync_1.default)(async (req, res, next) => {
+const loginValidator = (0, catchAsync_1.default)(async (req, res, next) => {
     try {
-        await exports.signupSchema.parseAsync(req.body);
+        await exports.loginSchema.parseAsync(req.body);
         next();
     }
     catch (error) {
@@ -24,4 +23,4 @@ const signupValidator = (0, catchAsync_1.default)(async (req, res, next) => {
         next({ message: messageString });
     }
 });
-exports.default = signupValidator;
+exports.default = loginValidator;

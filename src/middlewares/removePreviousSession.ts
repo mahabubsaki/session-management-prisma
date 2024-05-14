@@ -6,13 +6,14 @@ const removePreviousSession = catchAsync(async (req, res, next) => {
     const hash = req.fingerprint?.hash!;
     const sessionId = req.sessionID;
     if (!hash) {
-        return next('Please update your browser');
+        res.statusCode = 426;
+        return next({ message: 'Please update your browser' });
     }
-    const data = await prisma.sessions.deleteMany({
+    await prisma.sessions.deleteMany({
         where: {
             AND: [
                 { browserHash: hash },
-                { NOT: { sessionId: sessionId } }
+                { NOT: { sessionId: sessionId } },
             ]
         }
     });
