@@ -2,7 +2,7 @@
 import { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
 
-const globalErrorHandler: ErrorRequestHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
+const globalErrorHandler: ErrorRequestHandler = (err: Error, _: Request, res: Response, __: NextFunction) => {
 
     const responseObj = {
         statusCode: res.statusCode || 500,
@@ -13,6 +13,6 @@ const globalErrorHandler: ErrorRequestHandler = (err: Error, req: Request, res: 
     };
     console.dir(err);
     return res.status(responseObj.statusCode).json(responseObj);
-    // next();
+
 };
 export default globalErrorHandler;

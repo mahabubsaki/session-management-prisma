@@ -58,11 +58,15 @@ const signUpController = catchAsync(async (req, res, next) => {
         // @ts-ignore
         req.session.loggedIn = true;
     } catch (err) {
+
         if (err instanceof Prisma.PrismaClientKnownRequestError) {
 
-            prismaErrorHandler(err);
+            const { message, statusCode } = prismaErrorHandler(err);
+            res.statusCode = statusCode;
+            throw new Error(message);
         }
         else {
+            res.statusCode = 500;
             throw new Error('An error occurred while signing up');
         }
 

@@ -48,10 +48,58 @@ model RefreshToken {
 }
 
 model Sessions {
-  id          Int    @id @default(autoincrement())
+  id          String @id @default(cuid())
   userId      Int
   sessionId   String @unique
   browser     String
   browserHash String
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Catetgory {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("postCategories")
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  published Boolean
+  upVotes   Int
+  views     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  downVotes Int
+  createdAt DateTime @default(now())
+
+  @@index([title, content, createdAt])
+}
+
+model Profile {
+  id       String   @id @default(cuid())
+  username String
+  lastSeen DateTime
+  userId   Int
+  bio      String
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  timestamp DateTime @default(now())
+  postId    Int
+  userId    Int
+}
+
+model PostCategory {
+  postId     String
+  categoryId String
+
+  @@id([postId, categoryId])
 }

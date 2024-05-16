@@ -79,6 +79,7 @@ const verifyJWT = catchAsync(async (req, res, next) => {
 
     try {
         if (!token || !refreshToken || !storedSession) {
+            res.statusCode = 401;
             throw new Error('Unauthorized');
         }
         await verifyRefreshToken(refreshToken);
